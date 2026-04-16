@@ -13,7 +13,7 @@
     <div id="root"></div>
     
     <script type="text/babel">
-        const { useState } = React;
+        const { useState, useEffect } = React;
 
         function App() {
             // === ОСНОВНЫЕ ДАННЫЕ ===
@@ -56,6 +56,43 @@
             // === НАСТРОЙКИ ===
             const [totalLine, setTotalLine] = useState('9.5');
             const [result, setResult] = useState(null);
+            
+            // === БАЗА ДАННЫХ КОМАНД ===
+            const [teamsList, setTeamsList] = useState([]);
+
+            // Загрузка команд из базы
+            useEffect(() => {
+                const saved = localStorage.getItem('teamsDB');
+                if (saved) {
+                    setTeamsList(JSON.parse(saved));
+                }
+            }, []);
+
+            // Функция загрузки статистики команды (хозяева)
+            const loadHomeTeamStats = (teamName) => {
+                const team = teamsList.find(t => t.name === teamName);
+                if (!team) return;
+                
+                setHomeTeam(team.name);
+                setHomeCorners(team.home.corners);
+                setHomeMatches(team.home.matches);
+                setHomePossession(team.home.possession);
+                setHomeShots(team.home.shots);
+                setHomeAttackStrength(team.attackStrength.home);
+            };
+            
+            // Функция загрузки статистики команды (гости)
+            const loadAwayTeamStats = (teamName) => {
+                const team = teamsList.find(t => t.name === teamName);
+                if (!team) return;
+                
+                setAwayTeam(team.name);
+                setAwayCorners(team.away.corners);
+                setAwayMatches(team.away.matches);
+                setAwayPossession(team.away.possession);
+                setAwayShots(team.away.shots);
+                setAwayAttackStrength(team.attackStrength.away);
+            };
 
             // Математические функции
             const factorial = (n) => {
@@ -80,7 +117,6 @@
 
             // Профессиональный расчет лямбды с весами факторов
             const calculateProfessionalLambda = (baseLambda, factors) => {
-                // Веса факторов (основано на исследовании 500+ матчей)
                 const weights = {
                     possession: 0.25,
                     shots: 0.20,
@@ -93,13 +129,11 @@
                 };
                 
                 let adjustedLambda = baseLambda;
-                let totalWeight = 0;
                 
                 for (const [factor, value] of Object.entries(factors)) {
                     if (weights[factor] && value !== 1.0) {
                         const impact = (value - 1.0) * weights[factor];
                         adjustedLambda *= (1 + impact);
-                        totalWeight += Math.abs(impact);
                     }
                 }
                 
@@ -112,11 +146,9 @@
                     return;
                 }
 
-                // Базовая лямбда (только угловые)
                 const homeBaseLambda = parseFloat(homeCorners) / parseFloat(homeMatches);
                 const awayBaseLambda = parseFloat(awayCorners) / parseFloat(awayMatches);
                 
-                // Факторы для хозяев
                 const homeFactors = {
                     possession: parseFloat(homePossession) / 50,
                     shots: parseFloat(homeShots) / 10,
@@ -128,7 +160,6 @@
                     motivation: parseFloat(homeMotivation)
                 };
                 
-                // Факторы для гостей
                 const awayFactors = {
                     possession: parseFloat(awayPossession) / 50,
                     shots: parseFloat(awayShots) / 10,
@@ -140,18 +171,15 @@
                     motivation: parseFloat(awayMotivation)
                 };
                 
-                // Общие факторы
                 const generalFactors = {
                     weather: parseFloat(weather),
                     referee: parseFloat(referee),
                     fatigue: parseFloat(fatigue)
                 };
                 
-                // Скорректированные лямбды
                 let homeLambda = calculateProfessionalLambda(homeBaseLambda, homeFactors);
                 let awayLambda = calculateProfessionalLambda(awayBaseLambda, awayFactors);
                 
-                // Применяем общие факторы
                 for (const factor of Object.values(generalFactors)) {
                     homeLambda *= factor;
                     awayLambda *= factor;
@@ -162,7 +190,6 @@
                 const overProb = poissonOver(totalLambda, line);
                 const underProb = 100 - overProb;
                 
-                // Распределение вероятностей
                 const distribution = [];
                 for (let i = 0; i <= 18; i++) {
                     distribution.push({
@@ -171,7 +198,6 @@
                     });
                 }
                 
-                // Анализ факторов
                 const analysis = {
                     homeAdvantage: homeLambda > awayLambda ? `Хозяева сильнее на ${((homeLambda/awayLambda - 1)*100).toFixed(0)}%` : 'Гости сильнее',
                     confidence: Math.abs(overProb - 50) * 2,
@@ -196,7 +222,6 @@
                 });
             };
 
-            // Быстрая загрузка примеров
             const loadExample = (type) => {
                 if (type === 'liverpool') {
                     setHomeTeam('Ливерпуль');
@@ -245,7 +270,7 @@
                             </h1>
                             <p className="text-gray-300">Профессиональная модель с 20+ факторами корректировки</p>
                             
-                            {/* ===== НАВИГАЦИЯ МЕЖДУ КАЛЬКУЛЯТОРОМ И ТРЕКЕРОМ ===== */}
+                            {/* Навигация */}
                             <div className="flex gap-4 justify-center mt-6">
                                 <a href="index.html" className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition font-semibold">
                                     📊 Калькулятор
@@ -253,8 +278,10 @@
                                 <a href="tracker.html" className="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 transition font-semibold">
                                     📈 Трекер ставок
                                 </a>
+                                <a href="teams-db.html" className="bg-purple-600 text-white px-6 py-2 rounded-lg hover:bg-purple-700 transition font-semibold">
+                                    🏆 База команд
+                                </a>
                             </div>
-                            {/* ===== КОНЕЦ НАВИГАЦИИ ===== */}
                             
                             <div className="flex gap-2 justify-center mt-4">
                                 <button onClick={() => loadExample('liverpool')} 
@@ -272,6 +299,19 @@
                             {/* ХОЗЯЕВА - расширенная форма */}
                             <div className="bg-white rounded-xl shadow-xl p-5">
                                 <h2 className="text-2xl font-bold mb-4 text-blue-700 border-b pb-2">🏠 ХОЗЯЕВА</h2>
+                                
+                                {/* Выбор из базы данных */}
+                                {teamsList.length > 0 && (
+                                    <div className="mb-4">
+                                        <label className="block text-sm font-bold text-gray-700 mb-1">📋 Выбрать из базы</label>
+                                        <select onChange={(e) => loadHomeTeamStats(e.target.value)} className="w-full p-2 border rounded-lg bg-blue-50">
+                                            <option value="">-- Выберите команду --</option>
+                                            {teamsList.map(team => (
+                                                <option key={team.id} value={team.name}>{team.name} ({team.league})</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                )}
                                 
                                 <div className="mb-4">
                                     <label className="block text-sm font-bold text-gray-700 mb-1">Название команды</label>
@@ -360,6 +400,19 @@
                             {/* ГОСТИ - расширенная форма */}
                             <div className="bg-white rounded-xl shadow-xl p-5">
                                 <h2 className="text-2xl font-bold mb-4 text-purple-700 border-b pb-2">✈️ ГОСТИ</h2>
+                                
+                                {/* Выбор из базы данных */}
+                                {teamsList.length > 0 && (
+                                    <div className="mb-4">
+                                        <label className="block text-sm font-bold text-gray-700 mb-1">📋 Выбрать из базы</label>
+                                        <select onChange={(e) => loadAwayTeamStats(e.target.value)} className="w-full p-2 border rounded-lg bg-purple-50">
+                                            <option value="">-- Выберите команду --</option>
+                                            {teamsList.map(team => (
+                                                <option key={team.id} value={team.name}>{team.name} ({team.league})</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                )}
                                 
                                 <div className="mb-4">
                                     <label className="block text-sm font-bold text-gray-700 mb-1">Название команды</label>
