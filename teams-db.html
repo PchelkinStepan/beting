@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📊 База данных команд - Угловые статистика</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="bg-gray-100">
+    <div class="max-w-7xl mx-auto p-6">
+        <!-- Навигация -->
+        <div class="flex gap-4 justify-center mb-8">
+            <a href="index.html" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700">📊 Калькулятор</a>
+            <a href="tracker.html" class="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700">📈 Трекер ставок</a>
+            <a href="teams-db.html" class="bg-purple-600 text-white px-6 py-2 rounded-lg hover:bg-purple-700">🏆 База команд</a>
+        </div>
+
+        <div class="grid lg:grid-cols-3 gap-6">
+            <!-- Форма добавления/редактирования команды -->
+            <div class="bg-white rounded-xl shadow-lg p-6">
+                <h2 class="text-xl font-bold mb-4 text-purple-700">➕ Добавить/Редактировать команду</h2>
+                
+                <div class="space-y-3">
+                    <div>
+                        <label class="block text-sm font-medium">Лига</label>
+                        <select id="league" class="w-full p-2 border rounded">
+                            <option value="АПЛ">🏴󠁧󠁢󠁥󠁮󠁧󠁿 АПЛ (Англия)</option>
+                            <option value="Ла Лига">🇪🇸 Ла Лига (Испания)</option>
+                            <option value="Бундеслига">🇩🇪 Бундеслига (Германия)</option>
+                            <option value="Серия А">🇮🇹 Серия А (Италия)</option>
+                            <option value="Лига 1">🇫🇷 Лига 1 (Франция)</option>
+                            <option value="РПЛ">🇷🇺 РПЛ (Россия)</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium">Название команды</label>
+                        <input type="text" id="teamName" class="w-full p-2 border rounded" placeholder="Ливерпуль">
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-3">
+                        <div class="bg-blue-50 p-3 rounded">
+                            <h3 class="font-bold text-sm text-blue-700 mb-2">🏠 ДОМА</h3>
+                            <input type="number" id="homeCorners" placeholder="Сумма угловых" class="w-full p-1 border rounded text-sm mb-2">
+                            <input type="number" id="homeMatches" placeholder="Матчей" class="w-full p-1 border rounded text-sm mb-2" value="10">
+                            <input type="number" id="homePossession" placeholder="Владение %" class="w-full p-1 border rounded text-sm mb-2">
+                            <input type="number" id="homeShots" placeholder="Удары" class="w-full p-1 border rounded text-sm">
+                        </div>
+                        
+                        <div class="bg-purple-50 p-3 rounded">
+                            <h3 class="font-bold text-sm text-purple-700 mb-2">✈️ ГОСТИ</h3>
+                            <input type="number" id="awayCorners" placeholder="Сумма угловых" class="w-full p-1 border rounded text-sm mb-2">
+                            <input type="number" id="awayMatches" placeholder="Матчей" class="w-full p-1 border rounded text-sm mb-2" value="10">
+                            <input type="number" id="awayPossession" placeholder="Владение %" class="w-full p-1 border rounded text-sm mb-2">
+                            <input type="number" id="awayShots" placeholder="Удары" class="w-full p-1 border rounded text-sm">
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-sm font-medium">Атака дома</label>
+                            <select id="homeAttack" class="w-full p-2 border rounded">
+                                <option value="0.7">Очень слабая (0.7)</option>
+                                <option value="0.85">Слабая (0.85)</option>
+                                <option value="1.0" selected>Средняя (1.0)</option>
+                                <option value="1.15">Сильная (1.15)</option>
+                                <option value="1.3">Очень сильная (1.3)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium">Атака гости</label>
+                            <select id="awayAttack" class="w-full p-2 border rounded">
+                                <option value="0.7">Очень слабая (0.7)</option>
+                                <option value="0.85">Слабая (0.85)</option>
+                                <option value="1.0" selected>Средняя (1.0)</option>
+                                <option value="1.15">Сильная (1.15)</option>
+                                <option value="1.3">Очень сильная (1.3)</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="flex gap-2">
+                        <button onclick="saveTeam()" class="flex-1 bg-green-600 text-white p-2 rounded hover:bg-green-700">
+                            💾 Сохранить
+                        </button>
+                        <button onclick="clearForm()" class="flex-1 bg-gray-500 text-white p-2 rounded hover:bg-gray-600">
+                            🧹 Очистить
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Список команд -->
+            <div class="bg-white rounded-xl shadow-lg p-6 col-span-2">
+                <h2 class="text-xl font-bold mb-4 text-gray-700">🏆 База команд</h2>
+                
+                <div class="mb-4 flex gap-2">
+                    <select id="filterLeague" class="p-2 border rounded" onchange="filterTeams()">
+                        <option value="all">Все лиги</option>
+                        <option value="АПЛ">🏴󠁧󠁢󠁥󠁮󠁧󠁿 АПЛ</option>
+                        <option value="Ла Лига">🇪🇸 Ла Лига</option>
+                        <option value="Бундеслига">🇩🇪 Бундеслига</option>
+                        <option value="Серия А">🇮🇹 Серия А</option>
+                        <option value="Лига 1">🇫🇷 Лига 1</option>
+                        <option value="РПЛ">🇷🇺 РПЛ</option>
+                    </select>
+                    <input type="text" id="searchTeam" placeholder="Поиск..." class="flex-1 p-2 border rounded" onkeyup="filterTeams()">
+                </div>
+                
+                <div id="teamsList" class="max-h-96 overflow-y-auto space-y-2">
+                    <!-- Список команд будет здесь -->
+                </div>
+            </div>
+        </div>
+        
+        <!-- Статистика по лигам -->
+        <div class="bg-white rounded-xl shadow-lg p-6 mt-6">
+            <h2 class="text-xl font-bold mb-4 text-gray-700">📊 Статистика по лигам</h2>
+            <div id="leagueStats" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                <!-- Статистика будет здесь -->
+            </div>
+        </div>
+        
+        <!-- Экспорт/Импорт -->
+        <div class="bg-white rounded-xl shadow-lg p-6 mt-6">
+            <h2 class="text-xl font-bold mb-4 text-gray-700">💾 Резервное копирование</h2>
+            <div class="flex gap-4">
+                <button onclick="exportData()" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+                    📥 Экспорт данных (JSON)
+                </button>
+                <button onclick="importData()" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
+                    📤 Импорт данных
+                </button>
+                <input type="file" id="importFile" accept=".json" style="display:none" onchange="doImport(event)">
+                <button onclick="clearAllData()" class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700">
+                    ⚠️ Очистить все данные
+                </button>
+            </div>
+            <p class="text-sm text-gray-500 mt-2">Данные сохраняются в браузере. Экспортируйте для бэкапа.</p>
+        </div>
+    </div>
+
+    <script>
+        // Загрузка данных из localStorage
+        let teams = JSON.parse(localStorage.getItem('teamsDB') || '[]');
+        
+        function saveToLocal() {
+            localStorage.setItem('teamsDB', JSON.stringify(teams));
+            filterTeams();
+            updateLeagueStats();
+        }
+        
+        function saveTeam() {
+            const team = {
+                id: Date.now(),
+                league: document.getElementById('league').value,
+                name: document.getElementById('teamName').value,
+                home: {
+                    corners: parseFloat(document.getElementById('homeCorners').value) || 0,
+                    matches: parseInt(document.getElementById('homeMatches').value) || 10,
+                    possession: parseFloat(document.getElementById('homePossession').value) || 50,
+                    shots: parseFloat(document.getElementById('homeShots').value) || 10,
+                    avgCorners: 0,
+                    avgPossession: 0,
+                    avgShots: 0
+                },
+                away: {
+                    corners: parseFloat(document.getElementById('awayCorners').value) || 0,
+                    matches: parseInt(document.getElementById('awayMatches').value) || 10,
+                    possession: parseFloat(document.getElementById('awayPossession').value) || 50,
+                    shots: parseFloat(document.getElementById('awayShots').value) || 10,
+                    avgCorners: 0,
+                    avgShots: 0
+                },
+                attackStrength: {
+                    home: parseFloat(document.getElementById('homeAttack').value),
+                    away: parseFloat(document.getElementById('awayAttack').value)
+                },
+                lastUpdated: new Date().toLocaleString()
+            };
+            
+            // Рассчитываем средние
+            team.home.avgCorners = team.home.corners / team.home.matches;
+            team.home.avgPossession = team.home.possession;
+            team.home.avgShots = team.home.shots;
+            team.away.avgCorners = team.away.corners / team.away.matches;
+            team.away.avgShots = team.away.shots;
+            
+            if (!team.name) {
+                alert('Введите название команды!');
+                return;
+            }
+            
+            teams.push(team);
+            saveToLocal();
+            clearForm();
+            alert(`Команда "${team.name}" добавлена!`);
+        }
+        
+        function deleteTeam(id) {
+            if (confirm('Удалить команду?')) {
+                teams = teams.filter(t => t.id !== id);
+                saveToLocal();
+            }
+        }
+        
+        function editTeam(team) {
+            document.getElementById('league').value = team.league;
+            document.getElementById('teamName').value = team.name;
+            document.getElementById('homeCorners').value = team.home.corners;
+            document.getElementById('homeMatches').value = team.home.matches;
+            document.getElementById('homePossession').value = team.home.possession;
+            document.getElementById('homeShots').value = team.home.shots;
+            document.getElementById('awayCorners').value = team.away.corners;
+            document.getElementById('awayMatches').value = team.away.matches;
+            document.getElementById('awayPossession').value = team.away.possession;
+            document.getElementById('awayShots').value = team.away.shots;
+            document.getElementById('homeAttack').value = team.attackStrength.home;
+            document.getElementById('awayAttack').value = team.attackStrength.away;
+            
+            // Удаляем старую версию после редактирования
+            deleteTeam(team.id);
+        }
+        
+        function filterTeams() {
+            const leagueFilter = document.getElementById('filterLeague').value;
+            const searchText = document.getElementById('searchTeam').value.toLowerCase();
+            
+            let filtered = teams;
+            if (leagueFilter !== 'all') {
+                filtered = filtered.filter(t => t.league === leagueFilter);
+            }
+            if (searchText) {
+                filtered = filtered.filter(t => t.name.toLowerCase().includes(searchText));
+            }
+            
+            renderTeams(filtered);
+        }
+        
+        function renderTeams(teamsToRender) {
+            const container = document.getElementById('teamsList');
+            
+            if (teamsToRender.length === 0) {
+                container.innerHTML = '<div class="text-center text-gray-500 p-8">Нет команд. Добавьте первую!</div>';
+                return;
+            }
+            
+            container.innerHTML = teamsToRender.map(team => `
+                <div class="border rounded-lg p-3 hover:bg-gray-50">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <div class="font-bold text-lg">${team.name}</div>
+                            <div class="text-sm text-gray-500">${team.league}</div>
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick='editTeam(${JSON.stringify(team).replace(/'/g, "&#39;")})' 
+                                class="text-blue-600 hover:text-blue-800">✏️</button>
+                            <button onclick="deleteTeam(${team.id})" 
+                                class="text-red-600 hover:text-red-800">🗑️</button>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4 mt-2 text-sm">
+                        <div class="bg-blue-50 p-2 rounded">
+                            <span class="font-bold">🏠 Дома:</span> 
+                            ${team.home.avgCorners.toFixed(1)} угл | 
+                            ${team.home.avgPossession}% | 
+                            ${team.home.avgShots} уд
+                        </div>
+                        <div class="bg-purple-50 p-2 rounded">
+                            <span class="font-bold">✈️ В гостях:</span> 
+                            ${team.away.avgCorners.toFixed(1)} угл | 
+                            ${team.away.possession}% | 
+                            ${team.away.shots} уд
+                        </div>
+                    </div>
+                    <div class="text-xs text-gray-400 mt-1">
+                        Обновлено: ${team.lastUpdated}
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        function updateLeagueStats() {
+            const leagues = ['АПЛ', 'Ла Лига', 'Бундеслига', 'Серия А', 'Лига 1', 'РПЛ'];
+            const stats = {};
+            
+            leagues.forEach(league => {
+                const leagueTeams = teams.filter(t => t.league === league);
+                if (leagueTeams.length > 0) {
+                    const avgHomeCorners = leagueTeams.reduce((sum, t) => sum + t.home.avgCorners, 0) / leagueTeams.length;
+                    const avgAwayCorners = leagueTeams.reduce((sum, t) => sum + t.away.avgCorners, 0) / leagueTeams.length;
+                    stats[league] = { count: leagueTeams.length, home: avgHomeCorners.toFixed(1), away: avgAwayCorners.toFixed(1) };
+                }
+            });
+            
+            const container = document.getElementById('leagueStats');
+            container.innerHTML = Object.entries(stats).map(([league, data]) => `
+                <div class="bg-gray-50 rounded-lg p-3 text-center">
+                    <div class="font-bold">${league}</div>
+                    <div class="text-sm">${data.count} команд</div>
+                    <div class="text-xs text-blue-600">Дома: ${data.home} угл</div>
+                    <div class="text-xs text-purple-600">В гостях: ${data.away} угл</div>
+                </div>
+            `).join('');
+        }
+        
+        function clearForm() {
+            document.getElementById('teamName').value = '';
+            document.getElementById('homeCorners').value = '';
+            document.getElementById('homeMatches').value = '10';
+            document.getElementById('homePossession').value = '';
+            document.getElementById('homeShots').value = '';
+            document.getElementById('awayCorners').value = '';
+            document.getElementById('awayMatches').value = '10';
+            document.getElementById('awayPossession').value = '';
+            document.getElementById('awayShots').value = '';
+            document.getElementById('homeAttack').value = '1.0';
+            document.getElementById('awayAttack').value = '1.0';
+        }
+        
+        function exportData() {
+            const dataStr = JSON.stringify(teams, null, 2);
+            const blob = new Blob([dataStr], {type: 'application/json'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `teams_backup_${new Date().toISOString().slice(0,19)}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+        
+        function importData() {
+            document.getElementById('importFile').click();
+        }
+        
+        function doImport(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const imported = JSON.parse(e.target.result);
+                    if (Array.isArray(imported)) {
+                        teams = imported;
+                        saveToLocal();
+                        alert(`Импортировано ${teams.length} команд!`);
+                    } else {
+                        alert('Неверный формат файла');
+                    }
+                } catch(err) {
+                    alert('Ошибка при импорте');
+                }
+            };
+            reader.readAsText(file);
+        }
+        
+        function clearAllData() {
+            if (confirm('ВНИМАНИЕ! Это удалит ВСЕ команды. Продолжить?')) {
+                teams = [];
+                saveToLocal();
+                alert('Все данные удалены');
+            }
+        }
+        
+        // Инициализация
+        filterTeams();
+        updateLeagueStats();
+    </script>
+</body>
+</html>
